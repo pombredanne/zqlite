@@ -29,7 +29,8 @@ exit / quit / q / ^D    leave the zqlite shell
 '''
 
 db_file = None
-suggestions = set(['select','help','describe','quit','exit','show tables','sqlite_master'])
+suggestions_first = set(['select','help','describe','quit','exit','show tables'])
+suggestions_later = set(['sqlite_master'])
 
 
 def main():
@@ -54,10 +55,10 @@ def main():
     table_names = execute_command("select name from sqlite_master where type in ('table', 'view');")
     if table_names:
         for table_name in table_names:
-            suggestions.update([table_name['name']])
+            suggestions_later.update([table_name['name']])
             first_row = execute_command("""select * from "%s" limit 1;""" % table_name['name'])
             if first_row:
-                suggestions.update(first_row[0].keys())
+                suggestions_later.update(first_row[0].keys())
 
     enter_shell()
 
@@ -142,10 +143,20 @@ def table_overview(table_name):
             overview.append(row)
         return table.table(overview)
 
+
 def completer(text, state):
-    # Called every time the user presses Tab
-    # Generates a new list of options based on 
-    # what the user has already typed (if anything)
+    # Readline calls this function repeatedly, incrementing the "state" integer,
+    # until it returns None. It then uses all previously returned values
+    # as possible strings for autocompletion.
+
+    # So, we create a list of possible completions (based on "text" the user
+    # has already typed) and return each one in turn, until there are no more.
+
+    if len(readline.get_line_buffer().split()) < 2:
+        suggestions = suggestions_first
+    else:
+        suggestions = suggestions_later
+
     options = [i+' ' for i in suggestions if i.startswith(text)]
     if state < len(options):
         return options[state]

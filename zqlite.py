@@ -29,7 +29,7 @@ exit / quit / q / ^D    leave the zqlite shell
 '''
 
 db_file = None
-suggestions_first = set(['select','help','describe','quit','exit','show tables'])
+suggestions_first = set(['create','delete','drop','insert','select','update','help','describe','quit','exit','show tables'])
 suggestions_later = set(['sqlite_master'])
 
 
@@ -100,7 +100,7 @@ def enter_shell():
                     print table_overview(table_name)
             else:
                 result = execute_command(a)
-                if result:
+                if isinstance(result, list) and len(result):
                     print table.table(result)
 
 
@@ -114,14 +114,19 @@ def execute_command(command):
         print e
         return False
     else:
-        column_names = [ col[0] for col in result.description ]
-        rows = []
-        for row in result:
-            temp_row = OrderedDict()
-            for i, cell in enumerate(row):
-                temp_row[column_names[i]] = cell
-            rows.append(temp_row)
-        return rows
+        c = command.lower().strip()
+        if result.description:
+            column_names = [ col[0] for col in result.description ]
+            rows = []
+            for row in result:
+                temp_row = OrderedDict()
+                for i, cell in enumerate(row):
+                    temp_row[column_names[i]] = cell
+                rows.append(temp_row)
+            return rows
+        else:
+            return None
+
     conn.commit()
     conn.close()
 

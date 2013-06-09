@@ -134,12 +134,14 @@ def execute_command(command):
 def database_overview():
     result = execute_command("select type, name, sql from sqlite_master;")
     if result:
-        for thing in result:
-            if thing['type'] in ['table', 'view']:
-                r2 = execute_command("""select count(*) as n from "%s";""" % thing['name'])
-                thing['rows'] = int(r2[0]['n'])
-            else:
-                thing['rows'] = None
+        # Calculate row counts only if db file is less than 1GB
+        if os.path.getsize(db_file) < 1024 ** 3:
+            for thing in result:
+                if thing['type'] in ['table', 'view']:
+                    r2 = execute_command("""select count(*) as n from "%s";""" % thing['name'])
+                    thing['rows'] = int(r2[0]['n'])
+                else:
+                    thing['rows'] = None
         return table.table(result)
 
 
